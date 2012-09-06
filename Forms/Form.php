@@ -3,8 +3,10 @@
  * create form and handle all operations on created form
  * @author chajr <chajr@bluetree.pl>
  * @package form
- * @version 0.12.0
+ * @version 0.13.0
  * @copyright chajr/bluetree
+ * @todo pobieranie danych z other_val
+ * 
  */
 class Forms_Form 
 {
@@ -634,8 +636,7 @@ class Forms_Form
 		
 		$dependency = $this->_currentInput->getAttribute('valid_dependency');
 		if ($dependency) {
-			$separator      = '::';//pobierac z konfiga
-			$dependency     = explode($separator, $dependency);
+			$dependency     = explode(CORE_PARAM_SEPARATOR, $dependency);
 			foreach ($dependency as $element) {
 				if (!isset($this->_valueList[$element]) || 
                     !$this->_valueList[$element]
@@ -786,8 +787,7 @@ class Forms_Form
 		$name           = $this->_currentInput->getAttribute('name');
 		$checkField     = $this->_currentInput->getAttribute('check_field');
 		if ($checkField) {
-			$separator  = '::';
-			$type       = explode($separator, $checkField);
+			$type       = explode(CORE_PARAM_SEPARATOR, $checkField);
 			$inputs     = $this->_xml->getElementsByTagName('input');
 			foreach ($inputs as $index => $element) {
 				if ($element->getAttribute('name') === $type[0]) {
@@ -963,13 +963,15 @@ class Forms_Form
 				$this->_radioIndexNumber = 0;
 				$input = $this->_listDefinition[$name];
 			}
-			foreach ($input as $key => $value) {
-                $name = $this->_currentInput->getAttribute('name');
-                if (isset($this->_valueList[$name])) {
-                    $value = $this->_valueList[$name];
+            if ($input) {
+                foreach ($input as $key => $value) {
+                    $name = $this->_currentInput->getAttribute('name');
+                    if (isset($this->_valueList[$name])) {
+                        $value = $this->_valueList[$name];
+                    }
+                    $this->_currentInput->setAttribute($key, $value);
                 }
-				$this->_currentInput->setAttribute($key, $value);
-			}
+            }
 		}
 	}
 	/**

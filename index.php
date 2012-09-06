@@ -12,6 +12,7 @@
     </head>
     <body>
 		<?php
+        define('CORE_PARAM_SEPARATOR', '::');
 		require_once 'Core/Xml.php';
         require_once 'Validator/Simple.php';
 		require_once 'Forms/Form.php';
