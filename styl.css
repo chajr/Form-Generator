@@ -107,6 +107,30 @@ fieldset.warning legend{
 	background: linear-gradient(top,  #B8860B 0%,#a04409 100%); /* W3C */
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#21b8f1', endColorstr='#0072bb',GradientType=0 ); /* IE6-8 */
 }
+fieldset input[type="submit"]{
+    margin:10px auto;
+    display: block;
+    width:200px;
+    height: 50px;
+    background-color: #009900;
+    border: 1px solid #00ff00;
+    color:#fff;
+}
+fieldset input[type="submit"]:hover{
+    background-color: #00bb00;
+    border: 1px solid #006600;
+    cursor:pointer;
+}
+.ok{
+    width:80%;
+    margin:20px auto;
+    color:#fff;
+    font-size:16px;
+    text-align: center;
+    background-color: #009900;
+    border: 1px solid #00ff00;
+    line-height: 35px;
+}
 .form_error{
 	background-color: #CC0000;
 }
