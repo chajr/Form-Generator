@@ -3,9 +3,10 @@
  * create form and handle all operations on created form
  * @author chajr <chajr@bluetree.pl>
  * @package form
- * @version 0.13.0
+ * @version 0.14.0
  * @copyright chajr/bluetree
  * @todo pobieranie danych z other_val
+ * @todo dodac sterowanie ile razy dynamiczny input ma byc powtorzony, podane w definicji
  * 
  */
 class Forms_Form 
@@ -87,6 +88,11 @@ class Forms_Form
      * @var type 
      */
     protected $_valueList = array();
+	/**
+	 * array of dynamic inputs and their correct names
+	 * @var array 
+	 */
+    protected $_updateInputList = array();
 	/**
      * create form object, check that xml definition exists, load definition
      * and gets main node from definition
@@ -170,7 +176,9 @@ class Forms_Form
 					break;
 			}
 		}
-		//$this->check_list();
+        foreach($this->_updateInputList as $input) {
+			$input['node']->setAttribute('name', $input['name']);
+        }
 		$form = $this->_display->saveFile(0, 1);
 		$form = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $form);
 		$form = preg_replace('#<!DOCTYPE root SYSTEM "[\\w/_-]+\.dtd">#ui', '', $form);
@@ -680,9 +688,6 @@ class Forms_Form
 	 */
 	protected function _validRequire($value)
     {
-		
-		//sprawdzenie czy jeden z radio wymagany, oraz sprawdzenie dynamicznych checkboxow
-		
 		$name       = $this->_currentInput->getAttribute('name');
 		$required   = $this->_currentInput->getAttribute('required');
 		if ($required === 'required') {
@@ -927,6 +932,92 @@ class Forms_Form
 		);
 		$this->_removeAttribute($wrongAttributes);
 	}
+    /**
+     * updates checkbox attributes
+     * @param string $name input name
+     * @return array
+     * @uses Forms_Form::$_radioIndexNumber
+     * @uses Forms_Form::$_listDefinition
+     * @uses Forms_Form::$_valueList
+     */
+    protected function _updateCheckboxAttribute($name) 
+    {
+        $this->_radioIndexNumber = 0;
+        $input = $this->_listDefinition[$name];
+        if (!empty($this->_valueList) && !$this->_valueList[$name]) {
+            unset($input['checked']);
+        }
+        if ($this->_valueList[$name]) {
+            $input['checked'] = 'checked';
+        }
+        return $input;
+    }
+    /**
+     * updates ridiobutton attributes
+     * @param string $name input name
+     * @return array
+     * @uses Forms_Form::$_radioIndexNumber
+     * @uses Forms_Form::$_listDefinition
+     * @uses Forms_Form::$_valueList
+     * @uses Forms_Form::$_currentInput
+     */
+    protected function _updateRadioAttribute($name) 
+    {
+        unset($this->_listDefinition[$name]['value']);
+        $input = $this->_listDefinition[$name][$this->_radioIndexNumber];
+        $this->_currentInput->removeAttribute('checked');
+        if ($this->_valueList[$name] === $this->_currentInput->getAttribute('value')) {
+            $input['checked'] = 'checked';
+            foreach ($this->_listDefinition[$name] as $number => $values) {
+                if ($values['checked'] === 'checked') {
+                    unset($this->_listDefinition[$name][$number]['checked']);
+                }
+            }
+        }
+        $this->_radioIndexNumber++;
+        return $input;
+    }
+    /**
+     * updates input attributes, and append dynamic inputs given in definition
+     * @param string $name
+     * @return array
+     * @uses Forms_Form::$_radioIndexNumber
+     * @uses Forms_Form::$_listDefinition
+     * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::$_updateInputList
+     * @uses Core_Xml::$parentNode
+     * @uses Forms_Form::_checkDynamic()
+     * @uses Core_Xml::cloneNode()
+     */
+    protected function _updateInputAttribute($name) 
+    {
+        $input = FALSE;
+        if ($this->_checkDynamic()) {
+            if ($this->_listDefinition[$name]) {
+                $parentNode = $this->_currentInput->parentNode;
+                foreach ($this->_listDefinition[$name][0] as $firstName => $firstValue) {
+                    $this->_currentInput->setAttribute($firstName, $firstValue);
+                }
+                unset($this->_listDefinition[$name][0]);
+                foreach ($this->_listDefinition[$name] as $inputDefinition) {
+                    $newInput = $this->_currentInput->cloneNode();
+                    foreach ($inputDefinition as $attributeName => $value) {
+                        $newInput->setAttribute($attributeName, $value);
+                    }
+                    $newInput->removeAttribute('name');
+                    $addedNode = $parentNode->appendChild($newInput);
+                    $this->_updateInputList[] = array(
+                        'name'      => $name,
+						'node'		=> $addedNode
+                    );
+                }
+            }
+        } else {
+            $this->_radioIndexNumber = 0;
+            $input = $this->_listDefinition[$name];
+        }
+        return $input;
+    }
 	/**
      * updates input attributes compatible with given definition list
      * compleats with some contentwhen form has errors
@@ -937,39 +1028,39 @@ class Forms_Form
 	 * @uses Forms_Form::$_radioIndexNumber
 	 * @uses Forms_Form::$_listDefinition
 	 * @uses Forms_Form::_removeAttribute()
+     * @uses Forms_Form::_updateCheckboxAttribute()
+     * @uses Forms_Form::_updateRadioAttribute()
+     * @uses Forms_Form::_updateInputAttribute()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Core_Xml::setAttribute()
 	 */
 	protected function _updateAttribute($index)
     {
 		$name = $this->_currentInput->getAttribute('name');
-//		$dynamic = $this->_checkDynamic();
 		if (isset($this->_listDefinition[$name])) {
-			if ($this->_currentInput->getAttribute('type') === 'checkbox') {
-				if (isset($this->_listDefinition[$name]['value'])) {
-					if ($this->_listDefinition[$name]['value']) {
-						$this->_currentInput->setAttribute('checked', 'checked');
-					} elseif ($this->_currentInput->getAttribute('checked')) {
-						$this->_removeAttribute(array('checked'));
-					}
-				} elseif ($this->_currentInput->getAttribute('checked')) {
-					$this->_removeAttribute(array('checked'));
-				}
-			}
-			if ($this->_currentInput->getAttribute('type') === 'radio') {
-				$input = $this->_listDefinition[$name][$this->_radioIndexNumber];
-				$this->_radioIndexNumber++;
-			} else {
-				$this->_radioIndexNumber = 0;
-				$input = $this->_listDefinition[$name];
-			}
+            $input = FALSE;
+            switch ($this->_currentInput->getAttribute('type')) {
+                case 'checkbox':
+                    $input = $this->_updateCheckboxAttribute($name);
+                    break;
+                case 'radio':
+                    $input = $this->_updateRadioAttribute($name);
+                    break;
+                case 'textarea':
+                    break;
+                default:
+                    $input = $this->_updateInputAttribute($name);
+                    break;
+            }
             if ($input) {
                 foreach ($input as $key => $value) {
-                    $name = $this->_currentInput->getAttribute('name');
-                    if (isset($this->_valueList[$name])) {
-                        $value = $this->_valueList[$name];
-                    }
-                    $this->_currentInput->setAttribute($key, $value);
+                    @$this->_currentInput->setAttribute($key, $value);
+                }
+                if (isset($this->_valueList[$name]) && 
+                    $this->_currentInput->getAttribute('type') !== 'radio'
+                ) {
+                    $value = $this->_valueList[$name];
+                    $this->_currentInput->setAttribute('value', $value);
                 }
             }
 		}
@@ -1080,7 +1171,9 @@ class Forms_Form
 	 */
 	protected function _updateErrorNode($name)
     {
-		$this->_listDefinition[$name]['value'] = $this->_valueList[$name];
+        if ($this->_valueList[$name]) {
+            $this->_listDefinition[$name]['value'] = $this->_valueList[$name];
+        }
 		$key = key_exists(
             $this->_currentInput->getAttribute('name'), 
             $this->errorList
