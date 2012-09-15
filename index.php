@@ -21,31 +21,70 @@
 //				array('value' => 'asdfasdas'),
 //				array('value' => 'asdfasdas 2')
 //			),
+            'to_jest_nie_istniejacy_input' => array(
+                'value' => 'nie istnieje'
+            ),
 			'input1'	=> array('value' => 'asdfasdas'),
 			'input2'	=> array('value' => 'ddddddddddddd1'),
 			'input5'	=> array('value' => 34),
-			'chka'		=> array('checked' => 'checked'),
+			'chka'		=> array(
+                'checked' => 'checked',
+                'class'   => 'chka_class'
+            ),
+            'chkb'		=> array(
+                'value'   => 'asdasd'
+            ),
 			'rada'		=> array(
-				array('class' => 'first'),
-				array('class' => 'second', 'checked' => 'checked'),
-				array('class' => 'last')
-			)
+				array(
+                    'class' => 'first dupa', 
+                    'value' => 5,
+                    //'checked' => 'checked'
+                ),
+				array(
+                    'class' => 'second', 
+                    'checked' => 'checked'
+                ),
+				array(
+                    'class' => 'last',
+                )
+			),
+            'input_def[]' => array(
+                array(
+                    'value'     => 'a1',
+                    'id'        => 'dynamic_def_input_1'
+                ),
+                array(
+                    'value'     => 'a2',
+                    'id'        => 'dynamic_def_input_2'
+                ),
+                array(
+                    'value'     => 'a3',
+                    'id'        => 'dynamic_def_input_3'
+                ),
+            )
 		);
 		$form = new Forms_Form('form_definition', $default_array);
+        $ok = FALSE;
 		if ($_POST['incoming_form']) {
 			$bool = $form->valid($_POST);
 			if (!$bool) {
 				echo '<pre>';
 				var_dump($form->errorList);
 				echo '</pre>';
-			}
+			} else {
+                $ok = TRUE;
+            }
 			//przetworzenie danych
 			//uruchomienie metody add lub edit lub jakiejs innej
 			//metody zwracaja kompletne zapytania do uzycia w obiektach odpowiednich baz danych
 			//lub jako parametr jakiej ma uzyc metody bazy, bazy itp
 		}
 		var_dump($_POST);
-		?>
+        if ($ok) {?>
+        <div class="ok">
+            formularz wypelniony poprawnie
+        </div>
+        <?php } ?>
 		<fieldset class="baza">
 			<legend>
 				test form
