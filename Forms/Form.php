@@ -1,13 +1,20 @@
 <?php
 /**
- * create form and handle all operations on created form
+ * Blue Form library
+ * create form and handle all operations on created form from xml definition
  * @author chajr <chajr@bluetree.pl>
  * @package form
- * @version 0.14.0
+ * @version 0.16.2
  * @copyright chajr/bluetree
+ * @license http://sam.zoy.org/wtfpl/COPYING
  * @todo pobieranie danych z other_val
  * @todo dodac sterowanie ile razy dynamiczny input ma byc powtorzony, podane w definicji
  * 
+ * This program is free software. It comes without any warranty, to
+ * the extent permitted by applicable law. You can redistribute it
+ * and/or modify it under the terms of the Do What The Fuck You Want
+ * To Public License, Version 2, as published by Sam Hocevar. See
+ * http://sam.zoy.org/wtfpl/COPYING for more details.
  */
 class Forms_Form 
 {
@@ -93,24 +100,69 @@ class Forms_Form
 	 * @var array 
 	 */
     protected $_updateInputList = array();
+    /**
+     * protect from double creating of elements when validate and display inputs
+     * @var boolean 
+     */
+    protected $_createAttributes = TRUE;
+    /**
+     * contains array with object options
+     * @var array 
+     */
+    protected $_configuration = array(
+        'input_error_class'         => 'inputError',
+        'input_parent_error_class'  => 'input_error',
+        'form_error_class'          => 'form_error',
+        'attributes_to_hide'        => array(),
+        'use_error_node'            => TRUE,
+        'pattern_symbol'            => '#',
+        'validation_class'          => 'Validator_Simple'
+    );
+    /**
+     * contains boolean information that current processed dynamic input has validation error
+     * @var boolean 
+     */
+    protected $_dynamicError;
+    /**
+     * contain array of inputs with errorws with their positions
+     * @var integer 
+     */
+    protected $_errorIndex;
 	/**
      * create form object, check that xml definition exists, load definition
      * and gets main node from definition
-	 * @param string $form form definition name
+	 * @param mixed $form form definition name or array of options
      * @param string $listDefinition other form definitions (overrides that from xml file)
      * @uses Forms_Form::$_listDefinition
 	 * @uses Forms_Form::$error
 	 * @uses Forms_Form::$_main
 	 * @uses Forms_Form::$valid
      * @uses Forms_Form::$_xml
+     * @uses Forms_Form::$_configuration
 	 * @uses Core_Xml::$documentElement
 	 * @uses Core_Xml::$err
 	 * @uses Core_Xml::__construct()
 	 * @uses Core_Xml::loadFile()
 	 * @uses Core_Xml::getAttribute()
+     * @example new Forms_Form('form_definition')
+     * @example new Forms_Form(array(
+     *      'form'                      => 'form_definition',
+     *      'input_error_class'         => 'inputError',
+     *      'input_parent_error_class'  => 'input_error',
+     *      'form_error_class'          => 'form_error',
+     *      'attributes_to_hide'        => array('class', autocomplete),
+     *      'use_error_node'            => TRUE,
+     *      'pattern_symbol'            => '#',
+     *      'validation_class'          => 'Validator_Simple'
+     * ))
+     * @example new Forms_Form('form', array(input'=> array('value' => '1')))
 	 */
 	public function __construct($form, $listDefinition = NULL)
 	{
+        if (!is_string($form)) {
+            $this->_configuration = array_merge($this->_configuration, $form);
+            $form = $form['form'];
+        }
 		$this->_listDefinition = $listDefinition;
 		$definition = 'xml/' . $form . '.xml';
 		if (!file_exists($definition)) {
@@ -137,6 +189,7 @@ class Forms_Form
      * @uses Forms_Form::$_xml
      * @uses Forms_Form::$_allInputs
      * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::_createAttributes()
      * @uses Forms_Form::_updateAttribute()
      * @uses Forms_Form::_transformText()
      * @uses Forms_Form::_transformNumber()
@@ -153,8 +206,8 @@ class Forms_Form
 	{
 		$this->_display     = clone $this->_xml;
 		$this->_allInputs   = $this->_display->getElementsByTagName('input');
-		foreach ($this->_allInputs as $index => $this->_currentInput) {
-			$this->_updateAttribute($index);
+		foreach ($this->_allInputs as $this->_currentInput) {
+			$this->_updateAttribute();
 			$type = $this->_currentInput->getAttribute('type');
 			switch ($type) {
 				case'text': case'password': case'search': case'tel': case'url':
@@ -176,9 +229,7 @@ class Forms_Form
 					break;
 			}
 		}
-        foreach($this->_updateInputList as $input) {
-			$input['node']->setAttribute('name', $input['name']);
-        }
+        $this->_createAttributes();
 		$form = $this->_display->saveFile(0, 1);
 		$form = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $form);
 		$form = preg_replace('#<!DOCTYPE root SYSTEM "[\\w/_-]+\.dtd">#ui', '', $form);
@@ -199,6 +250,11 @@ class Forms_Form
      * @uses Forms_Form::$_inputError
      * @uses Forms_Form::$_main
      * @uses Forms_Form::$_valueList
+     * @uses Forms_Form::$_configuration
+     * @uses Forms_Form::$_dynamicError
+     * @uses Forms_Form::$_errorIndex
+     * @uses Forms_Form::_getName()
+     * @uses Forms_Form::_createAttributes()
      * @uses Forms_Form::_updateAttribute()
      * @uses Forms_Form::_checkDynamic()
      * @uses Forms_Form::_baseValidation()
@@ -217,39 +273,54 @@ class Forms_Form
 		}
         $this->_valueList = $valueList;
 		$this->_allInputs = $this->_xml->getElementsByTagName('input');
-		foreach ($this->_allInputs as $index => $this->_currentInput) {
-			$name = $this->_currentInput->getAttribute('name');
+		foreach ($this->_allInputs as $this->_currentInput) {
+            $name = $this->_getName();
 			if (!$name) {
 				continue;
 			}
-			$this->_updateAttribute($index);
+            if ($this->_valueList[$name]) {
+                $this->_listDefinition[$name]['value'] = $this->_valueList[$name];
+            }
+			$this->_updateAttribute();
 			$valid = $this->_currentInput->getAttribute('formnovalidate');
-			if ($valid === 'off') {
+            $disabled = $this->_currentInput->getAttribute('disabled');
+			if ($valid === 'off' || $disabled === 'disabled') {
 				continue;
 			}
 			if ($this->_checkDynamic()) {
-				$name = preg_replace('#[\[\]]#', '', $name);
+                $originalName = $name;
+                if (!isset($this->_valueList[$name])) {
+                    $this->_valueList[$name] = array(NULL);
+                }
+                $counter = 0;
+                foreach ($this->_valueList[$name] as $value) {
+                    $this->_dynamicError = FALSE;
+                    $value = trim($value);
+                    $this->_baseValidation($value);
+                    $this->_switchValid($value, $name);
+                    if ($this->_dynamicError) {
+                        if (!$counter) {
+                            $this->_addClass(
+                                $this->_currentInput, 
+                                $this->_configuration['input_error_class']
+                            );
+                        } else {
+                            $this->_errorIndex[$originalName][$counter] = $counter;
+                        }
+                    }
+                    $counter++;
+                }
 			} else {
 				$value = trim($this->_valueList[$name]);
 				$this->_baseValidation($value);
 				$this->_switchValid($value, $name);
 			}
-//			if(preg_match('#^[\p{L}\\d_-]+\[\]$#iu', $name)){
-//				$name = preg_replace('#[\[\]]#', '', $name);
-//				if(!in_array($name, $this->dont_check)){
-//					foreach($list->$name as $value){
-//						$this->_baseValidation($value, $list);
-//					}
-//					$this->dont_check[] = $name;
-//					$val = $list->$name;
-//				}
-//			}else{
-				
-//			}
 			$this->_updateErrorNode($name);
 		}
+        $this->_createAttributes();
+        $this->_createAttributes = FALSE;
 		if($this->_inputError){
-			$this->_addClass($this->_main, 'form_error');
+			$this->_addClass($this->_main, $this->_configuration['form_error_class']);
 			return FALSE;
 		}
 		return TRUE;
@@ -268,9 +339,6 @@ class Forms_Form
 	 */
 	protected function _baseValidation($value)
 	{
-		
-		//sprawdzanie atrybutu disabled, jesli disabled nie przetwarza pola
-		
 		$bool = $this->_validDependency();
 		if ($bool) {
 			return;
@@ -378,10 +446,11 @@ class Forms_Form
 	 * @uses Forms_Form::_setError()
 	 * @uses Forms_Form::_validRange()
 	 * @uses Forms_Form::_validStep()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validNumber($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -401,10 +470,11 @@ class Forms_Form
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validEmail($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern')) {
 			$bool = Validator_Simple::valid($value, 'mail');
 			if (!$bool) {
@@ -420,10 +490,11 @@ class Forms_Form
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validUrl($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -442,10 +513,11 @@ class Forms_Form
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
 	 * @uses Forms_Form::_validRange()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validColor($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern')) {
 			$bool = Validator_Simple::valid($value, 'hex_color');
 			if (!$bool) {
@@ -463,10 +535,11 @@ class Forms_Form
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
 	 * @uses Forms_Form::_validDateRange()
+     * @uses Forms_Form::_getName();
 	 */
 	protected function _validDate($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -486,12 +559,13 @@ class Forms_Form
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
 	 * @uses Validator_Simple::range()
+     * @uses Forms_Form::_getName();
 	 */
 	protected function _validWeek($value)
 	{
 		$value  = str_replace('W', '', $value);
 		$list   = explode('-', $value);
-		$name   = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -534,9 +608,10 @@ class Forms_Form
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
 	 * @uses Forms_Form::_validDateRange()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validTime($value){
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -556,10 +631,11 @@ class Forms_Form
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
 	 * @uses Forms_Form::_validDateRange()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validMonth($value)
 	{
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
 			!$this->_currentInput->getAttribute('valid_type')
 		) {
@@ -577,11 +653,12 @@ class Forms_Form
 	 * @uses Forms_Form::_setError()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::range()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validDateRange($value)
 	{
 		$value  = strtotime($value);
-		$name   = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$value) {
 			$this->_setError($name, 'date_range_conversion');
 		}
@@ -610,10 +687,11 @@ class Forms_Form
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::valid()
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 */
 	protected function _validTelephone($value)
     {
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (!$this->_currentInput->getAttribute('pattern') && 
             !$this->_currentInput->getAttribute('valid_type')
         ) {
@@ -641,6 +719,13 @@ class Forms_Form
 		//sprawdza czy radio, jesli tak i jesli $radio_index_number = 0 pobiera wartosc atrybutu _validDependency
 		//zapisuje wartosc w specjalnej zmiennej, tak aby mozna bylo go wiazac z innymi elementami radio
 		//jesli $radio_index_number = 0 czysci wartosc zmiennej
+        
+        
+        //cos nie dziala
+        //podwojne dzialanie
+        //tryb 1 wskazuje inputy ktore musze byc wypelniony gdy input wypelniony
+        //wskazuje inputy ktore musza byc wypelnione by aktualny stla sie wymagany
+        
 		
 		$dependency = $this->_currentInput->getAttribute('valid_dependency');
 		if ($dependency) {
@@ -660,6 +745,7 @@ class Forms_Form
 	 * @param float $value
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses simpleValid_calss::step()
 	 */
@@ -667,7 +753,7 @@ class Forms_Form
     {
 		$step = $this->_currentInput->getAttribute('step');
 		if (($step || $step == 0) && $step !== '') {
-			$name       = $this->_currentInput->getAttribute('name');
+			$name       = $this->_getName();
 			$default    = $this->_currentInput->getAttribute('value');
 			$check      = Validator_Simple::step($step, $value, $default);
 			if (!$check) {
@@ -684,11 +770,12 @@ class Forms_Form
 	 * @return boolean
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName();
 	 * @uses Core_Xml::getAttribute()
 	 */
 	protected function _validRequire($value)
     {
-		$name       = $this->_currentInput->getAttribute('name');
+		$name       = $this->_getName();
 		$required   = $this->_currentInput->getAttribute('required');
 		if ($required === 'required') {
 			if ($value === '') {
@@ -705,12 +792,15 @@ class Forms_Form
 	 * @param mixed $value
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 * @uses Core_Xml::getAttribute()
 	 */
 	protected function _validPattern($value)
     {
-		$name       = $this->_currentInput->getAttribute('name');
+		$name       = $this->_getName();
 		$pattern    = $this->_currentInput->getAttribute('pattern');
+        $symbol = $this->_configuration['pattern_symbol'];
+        $pattern = $symbol . $pattern . $symbol;
 		if ($pattern) {
 			$bool = preg_match($pattern, $value);
 			if (!$bool ){
@@ -723,6 +813,7 @@ class Forms_Form
 	 * @param mixed $value
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName();
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::charLenght()
 	 */
@@ -730,21 +821,23 @@ class Forms_Form
     {
 		$escape     = $this->_currentInput->getAttribute('escape');
 		$entities   = $this->_currentInput->getAttribute('entities');
-		$name       = $this->_currentInput->getAttribute('name');
+		$name       = $this->_getName();
 		$min        = $this->_currentInput->getAttribute('minlength');
 		$max        = $this->_currentInput->getAttribute('maxlength');
-        if ($min || $max) {
-            if ($escape) {
-			$value = mysqli_escape_string($value);
-            }
-            if ($entities) {
-                $value = htmlentities($value);
-            }
+        if ($escape) {
+            $value = mysqli_escape_string($value);
+        }
+        if ($entities) {
+            $value = htmlentities($value);
+        }
+        if ($min) {
             $minBool = Validator_Simple::charLenght($value, $min, NULL);
-            $maxBool = Validator_Simple::charLenght($value, NULL, $max);
             if (!$minBool) {
                 $this->_setError($name, 'minlength');
             }
+        }
+        if ($max) { 
+            $maxBool = Validator_Simple::charLenght($value, NULL, $max);
             if (!$maxBool) {
                 $this->_setError($name, 'maxlength');
             }
@@ -755,6 +848,7 @@ class Forms_Form
 	 * @param mixes $value
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName();
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::valid()
 	 * 
@@ -764,7 +858,7 @@ class Forms_Form
 	 */
 	protected function _validType($value)
     {
-		$name       = $this->_currentInput->getAttribute('name');
+		$name       = $this->_getName();
 		$validType  = $this->_currentInput->getAttribute('valid_type');
 		if ($validType) {
 			$bool = Validator_Simple::valid($value, $validType);
@@ -781,6 +875,7 @@ class Forms_Form
      * @uses Forms_Form::$_valueList
 	 * @uses Forms_Form::$_xml
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName();
 	 * @uses Core_Xml::getElementsByTagName()
 	 * @uses Core_Xml::getAttribute()
 	 * 
@@ -789,7 +884,7 @@ class Forms_Form
 	 */
 	protected function _validField()
     {
-		$name           = $this->_currentInput->getAttribute('name');
+		$name           = $this->_getName();
 		$checkField     = $this->_currentInput->getAttribute('check_field');
 		if ($checkField) {
 			$type       = explode(CORE_PARAM_SEPARATOR, $checkField);
@@ -819,14 +914,18 @@ class Forms_Form
 	 * @param float $value
 	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::_setError()
+     * @uses Forms_Form::_getName()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::range()
 	 */
 	protected function _validRange($value)
     {
 		$value  = str_replace(',', '.', $value);
-		$name   = $this->_currentInput->getAttribute('name');
+		$name   = $this->_getName();
 		$max    = $this->_currentInput->getAttribute('max');
+        echo '<pre>';
+        var_dump($max);
+        echo '</pre>';
 		if ($max) {
 			$bool = Validator_Simple::range($value, NULL, $max);
 			if (!$bool) {
@@ -841,6 +940,12 @@ class Forms_Form
 			}
 		}
 	}
+    public function _validSimilar($value) 
+    {
+        //porownuje podobienstwo stringow
+        //moze byc uzywane przy porownywaniu atrybutow, lub przy uzyciulisty definicji z atrybutem
+        $sim = similar_text($first, $second, $percent);
+    }
 	/**
      * make base input transformation, befor displaying it
      * removes unused, or incompatible with HTML5 attributes, nodes, error containres
@@ -947,7 +1052,7 @@ class Forms_Form
         if (!empty($this->_valueList) && !$this->_valueList[$name]) {
             unset($input['checked']);
         }
-        if ($this->_valueList[$name]) {
+        if (@$this->_valueList[$name]) {
             $input['checked'] = 'checked';
         }
         return $input;
@@ -960,21 +1065,36 @@ class Forms_Form
      * @uses Forms_Form::$_listDefinition
      * @uses Forms_Form::$_valueList
      * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::_createDynamicInputs()
      */
     protected function _updateRadioAttribute($name) 
     {
-        unset($this->_listDefinition[$name]['value']);
-        $input = $this->_listDefinition[$name][$this->_radioIndexNumber];
-        $this->_currentInput->removeAttribute('checked');
-        if ($this->_valueList[$name] === $this->_currentInput->getAttribute('value')) {
-            $input['checked'] = 'checked';
-            foreach ($this->_listDefinition[$name] as $number => $values) {
-                if ($values['checked'] === 'checked') {
-                    unset($this->_listDefinition[$name][$number]['checked']);
+        
+        //nie aktualizuje zaznaczenia na statycznych radio kiedy formularz ok
+        
+        $input = FALSE;
+        if ($this->_checkDynamic()) {
+            $this->_createDynamicInputs($name);
+            if (!$this->_createAttributes) {
+                $this->_currentInput->removeAttribute('checked');
+                if (@$this->_valueList[$name][0] === $this->_currentInput->getAttribute('value')) {
+                    $this->_currentInput->setAttribute('checked', 'checked');
                 }
             }
+        } else {
+            unset($this->_listDefinition[$name]['value']);
+            $input = $this->_listDefinition[$name][$this->_radioIndexNumber];
+            $this->_currentInput->removeAttribute('checked');
+            if (@$this->_valueList[$name] === $this->_currentInput->getAttribute('value')) {
+                $input['checked'] = 'checked';
+                foreach ($this->_listDefinition[$name] as $number => $values) {
+                    if ($values['checked'] === 'checked') {
+                        unset($this->_listDefinition[$name][$number]['checked']);
+                    }
+                }
+            }
+            $this->_radioIndexNumber++;
         }
-        $this->_radioIndexNumber++;
         return $input;
     }
     /**
@@ -983,35 +1103,14 @@ class Forms_Form
      * @return array
      * @uses Forms_Form::$_radioIndexNumber
      * @uses Forms_Form::$_listDefinition
-     * @uses Forms_Form::$_currentInput
-     * @uses Forms_Form::$_updateInputList
-     * @uses Core_Xml::$parentNode
      * @uses Forms_Form::_checkDynamic()
-     * @uses Core_Xml::cloneNode()
+     * @uses Forms_Form::_createDynamicInputs()
      */
     protected function _updateInputAttribute($name) 
     {
         $input = FALSE;
         if ($this->_checkDynamic()) {
-            if ($this->_listDefinition[$name]) {
-                $parentNode = $this->_currentInput->parentNode;
-                foreach ($this->_listDefinition[$name][0] as $firstName => $firstValue) {
-                    $this->_currentInput->setAttribute($firstName, $firstValue);
-                }
-                unset($this->_listDefinition[$name][0]);
-                foreach ($this->_listDefinition[$name] as $inputDefinition) {
-                    $newInput = $this->_currentInput->cloneNode();
-                    foreach ($inputDefinition as $attributeName => $value) {
-                        $newInput->setAttribute($attributeName, $value);
-                    }
-                    $newInput->removeAttribute('name');
-                    $addedNode = $parentNode->appendChild($newInput);
-                    $this->_updateInputList[] = array(
-                        'name'      => $name,
-						'node'		=> $addedNode
-                    );
-                }
-            }
+            $this->_createDynamicInputs($name);
         } else {
             $this->_radioIndexNumber = 0;
             $input = $this->_listDefinition[$name];
@@ -1022,7 +1121,6 @@ class Forms_Form
      * updates input attributes compatible with given definition list
      * compleats with some contentwhen form has errors
      * or selects selected before checkboxes, radio buttons and select inputs
-	 * @param integer $index index przetwarzanego elementu (dla elementow o takiej samej nazwie)
 	 * @uses Forms_Form::$_currentInput
      * @uses Forms_Form::$_valueList
 	 * @uses Forms_Form::$_radioIndexNumber
@@ -1031,12 +1129,13 @@ class Forms_Form
      * @uses Forms_Form::_updateCheckboxAttribute()
      * @uses Forms_Form::_updateRadioAttribute()
      * @uses Forms_Form::_updateInputAttribute()
+     * @uses Forms_Form::_getName();
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Core_Xml::setAttribute()
 	 */
-	protected function _updateAttribute($index)
+	protected function _updateAttribute()
     {
-		$name = $this->_currentInput->getAttribute('name');
+		$name = $this->_getName();
 		if (isset($this->_listDefinition[$name])) {
             $input = FALSE;
             switch ($this->_currentInput->getAttribute('type')) {
@@ -1060,19 +1159,83 @@ class Forms_Form
                     $this->_currentInput->getAttribute('type') !== 'radio'
                 ) {
                     $value = $this->_valueList[$name];
-                    $this->_currentInput->setAttribute('value', $value);
+                    if (!is_array($value)) {
+                        $this->_currentInput->setAttribute('value', $value);
+                    }
                 }
             }
 		}
 	}
+    /**
+     * creates dynamic inputs for display from given definition or uploaded data
+     * @param string $name
+     * @uses Core_Xml::cloneNode()
+     * @uses Core_Xml::setAttribute()
+     * @uses Core_Xml::removeAttribute()
+     * @uses Core_Xml::appendChild()
+     * @uses Core_Xml::$parentNode
+     * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::$_updateInputList
+     * @uses Forms_Form::$_createAttributes
+     * @uses Forms_Form::$_listDefinition
+     * @uses Forms_Form::$_valueList
+     */
+    protected function _createDynamicInputs($name) 
+    {
+        if ($this->_listDefinition[$name] && $this->_createAttributes) {
+            $parentNode = $this->_currentInput->parentNode;
+            if (isset($this->_listDefinition[$name][0])) {
+                $zeroElement = $this->_listDefinition[$name][0];
+                unset($this->_listDefinition[$name][0]);
+                unset($this->_listDefinition[$name]['value']);
+                $otherElements = $this->_listDefinition[$name];
+                $setAttribute = TRUE;
+            } else {
+                $zeroElement = $this->_listDefinition[$name]['value'];
+                unset($this->_listDefinition[$name]['value'][0]);
+                $otherElements = $this->_listDefinition[$name]['value'];
+                $setAttribute = FALSE;
+            }
+            foreach ($zeroElement as $firstName => $firstValue) {
+                $this->_currentInput->setAttribute($firstName, $firstValue);
+            }
+            if (isset($this->_valueList[$name][0])) {
+                $this->_currentInput->setAttribute(
+                    'value', $this->_valueList[$name][0]
+                );
+            }
+            $counter = 1;
+            foreach ($otherElements as $inputDefinition) {
+                $newInput = $this->_currentInput->cloneNode();
+                if ($setAttribute) {
+                    foreach ($inputDefinition as $attributeName => $value) {
+                        $newInput->setAttribute($attributeName, $value);
+                    }
+                }
+                if (isset($this->_valueList[$name][$counter])) {
+                    $newInput->setAttribute(
+                        'value', $this->_valueList[$name][$counter]
+                    );
+                }
+                $newInput->removeAttribute('name');
+                $addedNode = $parentNode->appendChild($newInput);
+                $this->_updateInputList[$name][] = array(
+                    'name'      => $name,
+                    'node'		=> $addedNode
+                );
+                $counter++;
+            }
+        }
+    }
 	/**
      * search in form elements for errors
      * if true process definition for display, if false process main definition
 	 * @param boolean $display definition type
 	 * @return mixed return xml node or NULL if not error element found 
-	 * @uses Forms_Form::$_currentInput
 	 * @uses Forms_Form::$_display
 	 * @uses Forms_Form::$_xml
+     * @uses Forms_Form::$_configuration
+     * @uses Forms_Form::_getName()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Core_Xml::getElementsByTagName()
 	 * @uses Core_Xml::item()
@@ -1082,31 +1245,33 @@ class Forms_Form
 	 */
 	protected function _searchErrorTag($display = FALSE)
     {
-		if ($this->_checkDynamic()) {
-			$name = preg_replace('#[\[\]]#', '', $this->_currentInput->getAttribute('name'));
-		} else {
-			$name = $this->_currentInput->getAttribute('name');
-		}
-		$name = $name . '_error';
-		if ($display) {
-			$node = $this->_display->getElementsByTagName($name);
-		} else {
-			$node = $this->_xml->getElementsByTagName($name);
-		}
-		if ($node->item(0)) {
-			return $node->item(0);
-		}
+        if ($this->_configuration['use_error_node']) {
+            $name = $name = $this->_getName();
+            $name .= '_error';
+            if ($display) {
+                $node = $this->_display->getElementsByTagName($name);
+            } else {
+                $node = $this->_xml->getElementsByTagName($name);
+            }
+            if ($node->item(0)) {
+                return $node->item(0);
+            }
+        }
 		return NULL;
 	}
 	/**
      * removes unnecessary attributes given in list 
 	 * @param array $array array of attributes to remove
 	 * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::$_configuration
 	 * @uses Core_Xml::removeAttribute()
 	 * @access private
 	 */
 	protected function _removeAttribute(array $array)
     {
+        if (!empty($this->_configuration['attributes_to_hide'])) {
+            $array = array_merge($array, $this->_configuration['attributes_to_hide']);
+        }
 		foreach ($array as $name) {
 			$this->_currentInput->removeAttribute($name);
 		}
@@ -1127,9 +1292,11 @@ class Forms_Form
 	 * @param string $errorType error code
 	 * @uses Forms_Form::$_inputError
 	 * @uses Forms_Form::$errorList
+     * @uses Forms_Form::$_dynamicError
 	 */
 	protected function _setError($name, $errorType)
     {
+        $this->_dynamicError = TRUE;
 		$this->_inputError = TRUE;
 		$this->errorList[$name][] = $errorType;
 	}
@@ -1143,7 +1310,12 @@ class Forms_Form
 	protected function _addClass($element, $newClass)
     {
 		$class  = $element->getAttribute('class');
-		$class .= ' ' . $newClass;
+        if ($class) {
+            $separator = ' ';
+        } else {
+            $separator = '';
+        }
+		$class .= $separator . $newClass;
 		$element->setAttribute('class', $class);
 	}
 	/**
@@ -1156,14 +1328,16 @@ class Forms_Form
 	 * @uses Forms_Form::$errorList
 	 * @uses Forms_Form::$_xml
 	 * @uses Forms_Form::$_inputError
+     * @uses Forms_Form::$_configuration
 	 * @uses Core_Xml::$parentNode
 	 * @uses Core_Xml::$nodeValue
 	 * @uses Core_Xml::$attributes
 	 * @uses Core_Xml::$nodeType
 	 * @uses Core_Xml::$name
 	 * @uses Core_Xml::$value
-	 * @uses Forms_Form::addClass()
+	 * @uses Forms_Form::_addClass()
 	 * @uses Forms_Form::_searchErrorTag()
+     * @uses Forms_Form::_getName()
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Core_Xml::createElement()
 	 * @uses Core_Xml::appendChild()
@@ -1171,22 +1345,27 @@ class Forms_Form
 	 */
 	protected function _updateErrorNode($name)
     {
-        if ($this->_valueList[$name]) {
-            $this->_listDefinition[$name]['value'] = $this->_valueList[$name];
-        }
 		$key = key_exists(
-            $this->_currentInput->getAttribute('name'), 
+            $name = $this->_getName(), 
             $this->errorList
         );
 		if ($this->_inputError && $key) {
 			$parent = $this->_currentInput->parentNode;
-			$this->_addClass($parent, 'input_error');
+			$this->_addClass(
+                $parent, $this->_configuration['input_parent_error_class']
+            );
+            if (!$this->_checkDynamic()) {
+                $this->_addClass(
+                    $this->_currentInput, $this->_configuration['input_error_class']
+                );
+            }
 			$errorNode = $this->_searchErrorTag();
 			if ($errorNode) {
 				$convertType = $errorNode->getAttribute('convert');
-				if (!$convertType) {
+				//if (!$convertType) {
 					//continue;//???????
-				}
+                    //sprawdzic co sie dzieje gdy $convertType jest null
+				//}
 				$errorCode = '';
 				foreach ($this->errorList[$name] as $code) {
 					$errorCode .= " {;$code;} ";
@@ -1231,5 +1410,42 @@ class Forms_Form
 		}
 		return FALSE;
 	}
+    /**
+     * create attribute name for dynamic inputs
+     * @uses Forms_Form::$_createAttributes
+     * @uses Forms_Form::$_updateInputList
+     * @uses Forms_Form::$_errorIndex
+     * @uses Forms_Form::$_configuration
+     * @uses Forms_Form::_addClass()
+     * @uses Core_Xml::setAttribute()
+     */
+    protected function _createAttributes() 
+    {
+        if ($this->_createAttributes) {
+            foreach($this->_updateInputList as $element) {
+                $counter = 1;
+                foreach ($element as $input) {
+                    if (isset($this->_errorIndex[$input['name']][$counter])) {
+                        $this->_addClass(
+                            $input['node'], $this->_configuration['input_error_class']
+                        );
+                    }
+                    $input['node']->setAttribute('name', $input['name'] . '[]');
+                    $counter++;
+                }
+            }
+        }
+    }
+    /**
+     * return current input name attribute value
+     * @return string
+     * @uses Forms_Form::$_currentInput
+     * @uses Core_Xml::getAttribute()
+     */
+    protected function _getName() 
+    {
+        $name = $this->_currentInput->getAttribute('name');
+        return preg_replace('#[\[\]]#', '', $name);
+    }
 }
 ?>
