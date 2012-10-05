@@ -11,6 +11,9 @@
 		<![endif]-->
     </head>
     <body>
+        <script>
+        var generatedForm = false;
+        </script>
 		<?php
         define('CORE_PARAM_SEPARATOR', '::');
 		require_once 'Core/Xml.php';
@@ -34,6 +37,7 @@
             'chkb'		=> array(
                 'value'   => 'asdasd'
             ),
+            //przy dynamicznych trzeba zglosic chocby puste, ale wszystkie definicje
 			'rada'		=> array(
 				array(
                     'class' => 'first dupa', 
@@ -48,7 +52,7 @@
                     'class' => 'last',
                 )
 			),
-            'input_def[]' => array(
+            'input_def' => array(
                 array(
                     'value'     => 'a1',
                     'id'        => 'dynamic_def_input_1'
@@ -61,11 +65,27 @@
                     'value'     => 'a3',
                     'id'        => 'dynamic_def_input_3'
                 ),
+            ),
+            'rad_def' => array(
+                array(
+                    'value'     => 'r1',
+                    'id'        => 'dynamic_rad_def_1'
+                ),
+                array(
+                    'value'     => 'r2',
+                    'id'        => 'dynamic_rad_def_2',
+                    'checked'   => 'checked'
+                ),
+                array(
+                    'value'     => 'r3',
+                    'id'        => 'dynamic_rad_def_3'
+                ),
             )
 		);
 		$form = new Forms_Form('form_definition', $default_array);
         $ok = FALSE;
-		if ($_POST['incoming_form']) {
+		if (@$_POST['incoming_form']) {
+            echo '<script>generatedForm = true;</script>';
 			$bool = $form->valid($_POST);
 			if (!$bool) {
 				echo '<pre>';
@@ -79,10 +99,14 @@
 			//metody zwracaja kompletne zapytania do uzycia w obiektach odpowiednich baz danych
 			//lub jako parametr jakiej ma uzyc metody bazy, bazy itp
 		}
-		var_dump($_POST);
+		//var_dump($_POST);
         if ($ok) {?>
         <div class="ok">
-            formularz wypelniony poprawnie
+            formularz wypełniony poprawnie
+        </div>
+        <?php } elseif (!$ok && !empty($_POST)) { ?>
+        <div class="err">
+            formularz zawiera błędy
         </div>
         <?php } ?>
 		<fieldset class="baza">
@@ -93,7 +117,8 @@
 		echo $form->displayForm();
 		?>
 		</fieldset>
-		<script type="text/javascript" src="jquery-1.6.1.min.js"></script>
+		<script type="text/javascript" src="jquery-1.8.2.min.js"></script>
+        <script type="text/javascript" src="jquery-ui-1.8.24.custom.min.js"></script>
 		<script type="text/javascript" src="js.js"></script>
     </body>
 </html>
