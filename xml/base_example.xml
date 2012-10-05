@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE root SYSTEM "form.dtd">
+<form method="post" action="" accept-charset="utf-8" target="_self">
+    <p>
+        <input type="hidden" name="form_type" value="base_example"/>
+		<label>
+			text input
+		</label>
+		<input type="text" name="input1" placeholder="Enter some text" 
+            required="required" value="" minlength="2" valid_type="string" 
+        />
+        <input1_error convert="span">Input 1 Error</input1_error>
+	</p>
+    <div class="attibutes">
+        type="text", name="input1", placeholder="Enter some text", 
+        required="required" value="" minlength="2" valid_type="string" 
+    </div>
+    <p>
+		<label>
+			number input
+		</label>
+		<input type="number" name="input2" placeholder="Enter some numbers" 
+            required="required" value="" minlength="2" valid_type="integer" 
+            max="50" maxlength="20" min="-50"
+        />
+        <input2_error convert="span">Input 2 Error</input2_error>
+    </p>
+    <div class="attibutes">
+        type="number" name="input2" placeholder="Enter some numbers" 
+        required="required" value="" minlength="2" valid_type="integer" 
+        max="50" maxlength="20" min="-50"
+    </div>
+    <p>
+        <input type="submit" value="submit"/>
+    </p>
+</form>

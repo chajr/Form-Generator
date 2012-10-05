@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE root SYSTEM "form.dtd">
+<form method="post" action="" accept-charset="utf-8" target="_self">
+    <fieldset class="form_block">
+        <legend>
+            Base informations
+        </legend>
+        <p>
+            <input type="hidden" name="form_type" value="register_form"/>
+            <label>
+                Name
+            </label>
+            <input type="text" name="name" placeholder="Enter Name" maxlength="20"
+                required="required" value="" minlength="2" valid_type="string" 
+                pattern="[a-z]*"
+            />
+            <name_error convert="span">Name Error</name_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="name" placeholder="Enter Name" maxlength="20"
+            required="required" value="" minlength="2" valid_type="string" 
+            pattern="#[a-z]*#"
+        </div>
+        <p>
+            <label>
+                Second Name
+            </label>
+            <input type="text" name="second_name" placeholder="Enter Second Name" 
+                maxlength="20" required="required" value="" minlength="2" 
+                valid_type="string" pattern="[a-z]*"
+            />
+            <second_name_error convert="span">Second Name Error</second_name_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="second_name" placeholder="Enter Second Name" 
+            maxlength="20" required="required" value="" minlength="2" valid_type="string" 
+            pattern="#[a-z]*#"
+        </div>
+        <p>
+            <label>
+                Password (letters and numbers)
+            </label>
+            <input type="password" name="pass1" placeholder="Enter Password" 
+                maxlength="20" required="required" value="" minlength="2" 
+                valid_type="num_chars" check_field="pass2::0"
+            />
+            <span> </span>
+            <label>
+                Retype password
+            </label>
+            <input type="password" name="pass2" placeholder="Enter Password" 
+                maxlength="20" required="required" value="" minlength="2" 
+                valid_type="num_chars" 
+            />
+        </p>
+        <div>
+            <pass1_error convert="span" class="input_error">Password Error</pass1_error>
+            <pass2_error convert="span" class="input_error"></pass2_error>
+        </div>
+        First password field:
+        <div class="attibutes">
+            type="password" name="pass1" placeholder="Enter Password" 
+            maxlength="20" required="required" value="" minlength="2" 
+            valid_type="num_chars" check_field="pass2::0"
+        </div>
+        Seccond password field:
+        <div class="attibutes">
+            type="password" name="pass2" placeholder="Enter Password" 
+            maxlength="20" required="required" value="" minlength="2" 
+            valid_type="num_chars"
+        </div>
+        <p>
+            <label>
+                Sex
+            </label>
+            Male
+            <input type="radio" name="sex" required="required" value="0"
+                valid_type="integer"
+            />
+            Female
+            <input type="radio" name="sex" value="1" valid_type="integer" />
+            <sex_error convert="span">Sex Error</sex_error>
+        </p>
+        <div class="attibutes">
+            type="radio" name="sex" required="required" value="0"
+            valid_type="integer"
+            <div class="info">
+                required only for first input
+            </div>
+        </div>
+        <p>
+            <label>
+                Birdth date (day/month/year)
+            </label>
+            <input type="date" name="date" placeholder="Birdt Date" 
+                minlength = "7" max="12/12/2012" min="01/01/1900" valid_type="jdate"
+            />
+            <date_error convert="span">Birdt Date Error</date_error>
+        </p>
+        <div class="attibutes">
+            type="date" name="date" placeholder="Birdt Date" 
+            minlength = "7" max="12/12/2012" min="01/01/1900" valid_type="jdate"
+            <div class="info">
+                Date range is converted with strtotime function, so format must 
+                be correct with that function. Compatible with that function 
+                valid_tepe is: <br/>
+                'jdate, jdatetime, time'
+            </div>
+        </div>
+    </fieldset>
+    <fieldset class="form_block">
+        <legend>
+            Address Information
+        </legend>
+        wybor z listy wojewodztwa
+        <p>
+            <label>
+                City
+            </label>
+            <input type="text" name="city" placeholder="Enter City Name" 
+                maxlength="20" required="required" value="" minlength="2" 
+                valid_type="string"
+            />
+            <city_error convert="span">City Name Error</city_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="city" placeholder="Enter City Name" 
+            maxlength="20" required="required" value="" minlength="2" 
+            valid_type="string"
+        </div>
+        <p>
+            <label>
+                Street
+            </label>
+            <input type="text" name="street" placeholder="Enter Street Name" 
+                maxlength="20" required="required" value="" minlength="2" 
+                valid_type="letters_extend"
+            />
+            <street_error convert="span">Street Error</street_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="street" placeholder="Enter Street Name" 
+            maxlength="20" required="required" value="" minlength="2" 
+            valid_type="letters_extend"
+        </div>
+        <p>
+            <label>
+                Post Code
+            </label>
+            <input type="text" name="post" placeholder="Enter Post Code" 
+                maxlength="6" required="required" value="" minlength="6" 
+                valid_type="postcode"
+            />
+            <post_error convert="span">Post Code Error</post_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="post" placeholder="Enter Post Code" 
+            maxlength="6" required="required" value="" minlength="6" 
+            valid_type="postcode"
+        </div>
+        <p>
+            <label>
+                House Number 
+            </label>
+            <input type="text" name="house_number" placeholder="Enter House Number" 
+                maxlength="10" required="required" value="" minlength="1" 
+                valid_type="num_char_extends" pattern="^[\w\d \\-]*$"
+            />
+            <house_number_error convert="span">House Number Error</house_number_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="house_number" placeholder="Enter House Number" 
+            maxlength="10" required="required" value="" minlength="1" 
+            valid_type="num_char_extends" pattern="^[\w\d \\-]*$"
+        </div>
+    </fieldset>
+    <p>
+        <label>
+            Shipp to other address
+        </label>
+        <input type="checkbox" name="shipp" maxlength="1" minlength="1"
+            value="1" valid_type="numeric" id="shipp_check"
+            valid_dependency_="city2::street2::post2::house_number2"
+        />
+        <shipp_error convert="span"></shipp_error>
+    </p>
+    <div class="attibutes">
+        type="checkbox" name="shipp" maxlength="1" minlength="1"
+        value="1" valid_type="numeric" id="shipp_check"
+        valid_dependency="city2::street2::post2::house_number2"
+    </div>
+    <fieldset class="form_block" id="shipp_address">
+        <legend>
+            Shipping Information (if Shipp to other address is checked)
+        </legend>
+        <p>
+            <label>
+                City 2
+            </label>
+            <input type="text" name="city2" placeholder="Enter City Name" 
+                maxlength="20" value="" minlength="2" valid_type="string"
+            />
+            <city2_error convert="span">City Name Error</city2_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="city2" placeholder="Enter City Name" 
+            maxlength="20" value="" minlength="2" valid_type="string"
+        </div>
+        <p>
+            <label>
+                Street 2
+            </label>
+            <input type="text" name="street2" placeholder="Enter Street Name" 
+                maxlength="20" value="" minlength="2" valid_type="letters_extend"
+                
+            />
+            <street2_error convert="span">Street Error</street2_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="street" placeholder="Enter Street Name" 
+            maxlength="20" value="" minlength="2" valid_type="letters_extend"
+        </div>
+        <p>
+            <label>
+                Post Code 2
+            </label>
+            <input type="text" name="post2" placeholder="Enter Post Code" 
+                maxlength="6" value="" minlength="6" valid_type="postcode"
+                
+            />
+            <post2_error convert="span">Post Code Error</post2_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="post2" placeholder="Enter Post Code" 
+            maxlength="6" value="" minlength="6" 
+        </div>
+        <p>
+            <label>
+                House Number 2
+            </label>
+            <input type="text" name="house_number2" placeholder="Enter House Number" 
+                maxlength="10" value="" minlength="1" 
+                valid_type="num_char_extends" pattern="^[\w\d \\-]*$"
+            />
+            <house_number2_error convert="span">House Number Error</house_number2_error>
+        </p>
+        <div class="attibutes">
+            type="text" name="house_number2" placeholder="Enter House Number" 
+            maxlength="10" value="" minlength="1" 
+            valid_type="num_char_extends" pattern="^[\w\d \\-]*$"
+        </div>
+    </fieldset>
+    <p>
+        newsletter
+    </p>
+    <p>
+        <input type="submit" value="submit"/>
+    </p>
+</form>
