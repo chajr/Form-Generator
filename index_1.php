@@ -7,6 +7,8 @@
 		<link href="960_24_col.css" rel="stylesheet" type="text/css" />
 		<link href="styl2.css" rel="stylesheet" type="text/css" />
         <link href="css/custom-theme/jquery-ui-1.8.24.custom.css" rel="stylesheet" type="text/css" />
+		<link href="shCore.css" rel="stylesheet" type="text/css" />
+		<link href="shThemeDefault.css" rel="stylesheet" type="text/css" />
 		<!--[if IE]>
 		  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 		<![endif]-->
@@ -139,7 +141,7 @@ as the name is changed.
                                 Implementation of main files:
                             </h4>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     <&quest;php
     define('CORE_PARAM_SEPARATOR', '::');
     require_once 'Core/Xml.php';
@@ -156,7 +158,7 @@ as the name is changed.
                                 Starting of libary:
                             </h4>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $form = new Forms_Form('some_definition');</pre>
                             </code>
                             <span>
@@ -166,14 +168,14 @@ as the name is changed.
                                 Described in next step.
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     echo $form->displayForm();</pre>
                             </code>
                             <span>
                                 Display complete form.
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $form->valid($_POST);</pre>
                             </code>
                             <span>
@@ -184,14 +186,14 @@ as the name is changed.
                                 FALSE form has some errors, TRUE form ok
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $form->errorList;</pre>
                             </code>
                             <span>
                                 Contains informations about input errors.
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
 array(10) {
     ["input4"]=>
       array(2) {
@@ -209,7 +211,7 @@ array(10) {
                                 Full example:
                             </h4>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     <&quest;php
     $form = new Forms_Form('form_definition');
     if (!empty($_POST)) {
@@ -244,7 +246,7 @@ array(10) {
                                 All elements must be declare in xml file. 
                             </p>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $definition = array(
         'input1'	=> array('value' => 'some value'),
         'input2'	=> array(
@@ -266,7 +268,7 @@ array(10) {
                                 Override attributes given in xml definition.
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $definition = array(
         'dynamic_input' => array(
             array(
@@ -308,7 +310,7 @@ array(10) {
                                 Base usage:
                             </h4>
                             <code>
-                                <pre>
+                                <pre class="brush: xml">
     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
     &lt;!DOCTYPE root SYSTEM "form.dtd"&gt;
         &lt;form method="post" name="form" action="" accept-charset="utf-8" target="_self"&gt;
@@ -339,7 +341,7 @@ array(10) {
                                 Error node can contains other html nodes.
                             </div>
                             <code>
-                                <pre>
+                                <pre class="brush: xml">
     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
     &lt;!DOCTYPE root SYSTEM "form.dtd"&gt;
         &lt;form method="post" name="form" action="" accept-charset="utf-8" target="_self"&gt;
@@ -372,7 +374,7 @@ array(10) {
                                 Used in dynamic checkbox and radio buttons.
                             </div>
                             <code>
-                                <pre>
+                                <pre class="brush: xml">
     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
     &lt;!DOCTYPE root SYSTEM "form.dtd"&gt;
         &lt;form method="post" name="form" action="" accept-charset="utf-8" target="_self"&gt;
@@ -401,14 +403,14 @@ array(10) {
                                 in constructor array of options.
                             </p>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $form = new Forms_Form('some_definition', $listDefinition, $optionsArray);</pre>
                             </code>
                             <span>
                                 Adding options to library.
                             </span>
                             <code>
-                                <pre>
+                                <pre class="brush: php">
     $optionsArray = array(
         'input_error_class'         => 'inputError',
         'input_parent_error_class'  => 'input_error',
@@ -649,12 +651,12 @@ array(10) {
                                 echo $baseForm->displayForm();
                                 ?>
                             </fieldset>
-                            <div class="button" rel="php">
+                            <div class="button" rel="php_block">
                                 Show PHP code
                             </div>
-                            <div class="php">
+                            <div class="php_block">
                                 <code>
-                                    <pre>
+                                    <pre class="brush: php">
     $baseForm = new Forms_Form('base_example');
     if (isset($_POST['form_type']) && $_POST['form_type'] === 'base_example') {
         $bool = $baseForm->valid($_POST);
@@ -670,12 +672,12 @@ array(10) {
                                     php code
                                 </span>
                             </div>
-                            <div class="button" rel="xml">
+                            <div class="button" rel="xml_block">
                                 Show XML code
                             </div>
-                            <div class="xml">
+                            <div class="xml_block">
                                 <code>
-                                    <pre>
+                                    <pre class="brush: xml">
     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
     &lt;!DOCTYPE root SYSTEM "form.dtd"&gt;
     &lt;form method="post" action="" accept-charset="utf-8" target="_self"&gt;
@@ -747,12 +749,12 @@ array(10) {
                                 echo $registerForm->displayForm();
                                 ?>
                             </fieldset>
-                            <div class="button" rel="php">
+                            <div class="button" rel="php_block">
                                 Show PHP code
                             </div>
-                            <div class="php">
+                            <div class="php_block">
                                 <code>
-                                    <pre>
+                                    <pre class="brush: php">
     $registerForm = new Forms_Form('register_form');
     if (isset($_POST['form_type']) && $_POST['form_type'] === 'register_form') {
         $bool = $registerForm->valid($_POST);
@@ -768,12 +770,12 @@ array(10) {
                                     php code
                                 </span>
                             </div>
-                            <div class="button" rel="xml">
+                            <div class="button" rel="xml_block">
                                 Show XML code
                             </div>
-                            <div class="xml">
+                            <div class="xml_block">
                                 <code>
-                                    <pre>
+                                    <pre class="brush: xml">
     &lt;?xml version="1.0" encoding="UTF-8"?&gt;
     &lt;!DOCTYPE root SYSTEM "form.dtd"&gt;
     &lt;form method="post" action="" accept-charset="utf-8" target="_self"&gt;
@@ -860,6 +862,10 @@ array(10) {
         </footer>
 		<script type="text/javascript" src="jquery-1.8.2.min.js"></script>
         <script type="text/javascript" src="jquery-ui-1.8.24.custom.min.js"></script>
+		<script type="text/javascript" src="XRegExp.js"></script>
+		<script type="text/javascript" src="shCore.js"></script>
+		<script type="text/javascript" src="shBrushPhp.js"></script>
+		<script type="text/javascript" src="shBrushXml.js"></script>
 		<script type="text/javascript" src="js2.js"></script>
         <a href="https://github.com/chajr/Form-Generator">
             <img style="position: absolute; top: 0; right: 0; border: 0;" 

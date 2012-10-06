@@ -1,3 +1,4 @@
+SyntaxHighlighter.all();
 $(document).ready(function()
 {
     var activeNumber = 0;

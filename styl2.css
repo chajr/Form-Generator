@@ -50,10 +50,10 @@ a.download:hover{
 }
 code{
     border:1px dashed #555;
-    background-color: #bfbfbf;
+    background-color: #ececec;
     color:#000;
     padding:15px;
-    font-family: Monospaced, Curier;
+    font-family: Monospaced, 'Courier New',Courier,monospace;
     display: block;
 }
 span{
@@ -193,7 +193,7 @@ fieldset input{
 form{
     padding: 10px;
 }
-.xml, .php{
+.xml_block, .php_block{
     display: none;
 }
 .button{
@@ -269,4 +269,7 @@ label{
 }
 #shipp_address{
     display: none;
+}
+.container code{
+	display: inline;
 }
