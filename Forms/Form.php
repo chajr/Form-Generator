@@ -4,11 +4,11 @@
  * create form and handle all operations on created form from xml definition
  * @author chajr <chajr@bluetree.pl>
  * @package form
- * @version 0.16.2
+ * @version 0.18.0
  * @copyright chajr/bluetree
  * @license http://sam.zoy.org/wtfpl/COPYING
- * @todo pobieranie danych z other_val
- * @todo dodac sterowanie ile razy dynamiczny input ma byc powtorzony, podane w definicji
+ * @todo getting data from other_val attribute
+ * @todo add how many dynamic inputs will be created, added in definition
  * 
  * This program is free software. It comes without any warranty, to
  * the extent permitted by applicable law. You can redistribute it
@@ -37,7 +37,9 @@ class Forms_Form
         'check_field', 
         'escape', 
         'entities', 
-        'dynamic'
+        'dynamic',
+        'check_callback_value',
+        'check_value'
 	);
 	/**
      * list of inputs with errors
@@ -198,9 +200,6 @@ class Forms_Form
      * @uses Forms_Form::_transformCheckbox()
      * @uses Core_Xml::getElementsByTagName()
      * @uses Core_Xml::saveFile()
-	 * 
-	 * @todo wyswietlenie pol dynamicznych wraz z wartosciami w przypadku bledu
-	 * 
 	 */
 	public function displayForm()
 	{
@@ -264,7 +263,7 @@ class Forms_Form
      * @uses Core_Xml::getElementsByTagName()
      * @uses Core_Xml::getAttribute()
      * 
-	 * @todo mozliwa konwersja jezykowa kodow
+	 * @todo add language code to write it for errorc code
 	 */
 	public function valid(array $valueList)
 	{
@@ -278,7 +277,7 @@ class Forms_Form
 			if (!$name) {
 				continue;
 			}
-            if ($this->_valueList[$name]) {
+            if (isset($this->_valueList[$name])) {
                 $this->_listDefinition[$name]['value'] = $this->_valueList[$name];
             }
 			$this->_updateAttribute();
@@ -351,6 +350,8 @@ class Forms_Form
 		$this->_validLength($value);
 		$this->_validType($value);
 		$this->_validField();
+        $this->_validCompare($value);
+        $this->_validCallbackCompare($value);
 	}
 	/**
      * switch validation type based on input type
@@ -852,8 +853,7 @@ class Forms_Form
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Validator_Simple::valid()
 	 * 
-	 * @todo w zaleznosci od typu sprawdzania sprawdza dodatkowe atrybuty (np jesli sprawdza date, uruchamia sprawdzenie zakresu dat) zabezpieczenie dla zwyklych inputow
-	 * @todo zabezpieczenie gdy mozliwe podwojne sprawdzenie np zakresu
+	 * @todo depends of valid_type attribute checks some other informations (like if valid is date checks date range)
 	 * 
 	 */
 	protected function _validType($value)
@@ -879,7 +879,7 @@ class Forms_Form
 	 * @uses Core_Xml::getElementsByTagName()
 	 * @uses Core_Xml::getAttribute()
 	 * 
-	 * @todo sprawdzanie czy wartosc pola jest wieksza, mniejsza, itp
+	 * @todo checks that value is bigger or smaller
 	 * 
 	 */
 	protected function _validField()
@@ -908,6 +908,48 @@ class Forms_Form
 			}
 		}
 	}
+    /**
+     * compare given input value with value of attribute
+     * @param type $value
+     * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::_getName()
+     * @uses Forms_Form::_setError()
+     */
+    protected function _validCompare($value) 
+    {
+        $compareValue = $this->_currentInput->getAttribute('check_value');
+        if ($compareValue) {
+            if ($compareValue !== $value) {
+                $name = $this->_getName();
+                $this->_setError($name, 'compare');
+            }
+        }
+    }
+    /**
+     * compare given input using a callback function
+     * @return boolean NULL if class to compare dont exist
+     * @param mixed $value
+     * @uses Forms_Form::$_currentInput
+     * @uses Forms_Form::$error
+     * @uses Forms_Form::_getName()
+     * @uses Forms_Form::_setError()
+     */
+    protected function _validCallbackCompare($value) 
+    {
+        $function = $this->_currentInput->getAttribute('check_callback_value');
+        if ($function) {
+            $class = explode('::', $function);
+            if (!class_exists($class[0])) {
+                $this->error = 'callback_class_not_defined';
+                return NULL;
+            }
+            $bool = call_user_func($function, $value);
+            if (!$bool) {
+                $name = $this->_getName();
+                $this->_setError($name, 'callback_compare');
+            }
+        }
+    }
 	/**
      * checks range of numeric value
      * if value has ',' chenge it to '.'
@@ -923,9 +965,6 @@ class Forms_Form
 		$value  = str_replace(',', '.', $value);
 		$name   = $this->_getName();
 		$max    = $this->_currentInput->getAttribute('max');
-        echo '<pre>';
-        var_dump($max);
-        echo '</pre>';
 		if ($max) {
 			$bool = Validator_Simple::range($value, NULL, $max);
 			if (!$bool) {
@@ -945,6 +984,7 @@ class Forms_Form
         //porownuje podobienstwo stringow
         //moze byc uzywane przy porownywaniu atrybutow, lub przy uzyciulisty definicji z atrybutem
         $sim = similar_text($first, $second, $percent);
+        //$this->_setError($name, 'similar');
     }
 	/**
      * make base input transformation, befor displaying it
@@ -1069,9 +1109,6 @@ class Forms_Form
      */
     protected function _updateRadioAttribute($name) 
     {
-        
-        //nie aktualizuje zaznaczenia na statycznych radio kiedy formularz ok
-        
         $input = FALSE;
         if ($this->_checkDynamic()) {
             $this->_createDynamicInputs($name);
@@ -1239,9 +1276,6 @@ class Forms_Form
 	 * @uses Core_Xml::getAttribute()
 	 * @uses Core_Xml::getElementsByTagName()
 	 * @uses Core_Xml::item()
-	 * 
-	 * @todo przerobic tagi errorow, rozpoznawanie po atrybucie a nie nazwie wezla
-	 * 
 	 */
 	protected function _searchErrorTag($display = FALSE)
     {
@@ -1351,13 +1385,17 @@ class Forms_Form
         );
 		if ($this->_inputError && $key) {
 			$parent = $this->_currentInput->parentNode;
-			$this->_addClass(
-                $parent, $this->_configuration['input_parent_error_class']
-            );
-            if (!$this->_checkDynamic()) {
+            if ($this->_configuration['input_parent_error_class']) {
                 $this->_addClass(
-                    $this->_currentInput, $this->_configuration['input_error_class']
-                );
+                    $parent, $this->_configuration['input_parent_error_class']
+                ); 
+            }
+            if (!$this->_checkDynamic()) {
+                if ($this->_configuration['input_error_class']) {
+                    $this->_addClass(
+                        $this->_currentInput, $this->_configuration['input_error_class']
+                    ); 
+                }
             }
 			$errorNode = $this->_searchErrorTag();
 			if ($errorNode) {

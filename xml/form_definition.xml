@@ -18,7 +18,7 @@
 		</label>
 		<input type="text" autocomplete="" autofocus="autofocus" disabled="" 
             form="" formnovalidate="" height="20" width="50" list="" maxlength="20"
-			name="input1" pattern="#[a-z]*#" placeholder="Wpisz jakiś tekst" 
+			name="input1" pattern="[a-z]*" placeholder="Wpisz jakiś tekst" 
             readonly="" required="required" size="20" step="" value="" minlength="2"
 			id="input1" style="" class="" onclick="" valid_type="string" 
             other_val="" valid_dependency="" check_field="input2::0" escape="" entities=""
@@ -34,7 +34,7 @@
 		</label>
 		<input type="text" autocomplete="" autofocus="autofocus" disabled="" 
             form="" formnovalidate="" height="20" width="50" list="" 
-            maxlength="20" name="input[]" pattern="#[a-z]*#" 
+            maxlength="20" name="input[]" pattern="[a-z]*" 
             placeholder="Wpisz jakiś tekst" readonly="" required="required" 
             size="20" step="" value="" minlength = "2" id="inputx1" style="" 
             class="" onclick="" valid_type="string" other_val="" 
@@ -93,7 +93,7 @@
 			</label>
 			<input type="text" autocomplete="" autofocus="" disabled="" form="" 
                 formnovalidate="" height="20" width="50" list="lista" max="" 
-                maxlength="20" min="" name="input4" pattern="#[A-z]+#" 
+                maxlength="20" min="" name="input4" pattern="[A-z]+" 
                 placeholder="Wpisz jakiś tekst" readonly="" required="required" 
                 size="20" step="" value="" id="" style="" class="" valid_type="" 
                 other_val="SELECT..." valid_dependency="input1" check_field=""

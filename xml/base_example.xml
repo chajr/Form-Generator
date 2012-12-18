@@ -14,6 +14,7 @@
     <div class="attibutes">
         type="text", name="input1", placeholder="Enter some text", 
         required="required" value="" minlength="2" valid_type="string" 
+        <span></span>
     </div>
     <p>
 		<label>
@@ -29,6 +30,7 @@
         type="number" name="input2" placeholder="Enter some numbers" 
         required="required" value="" minlength="2" valid_type="integer" 
         max="50" maxlength="20" min="-50"
+        <span></span>
     </div>
     <p>
         <input type="submit" value="submit"/>

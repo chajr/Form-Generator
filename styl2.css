@@ -14,7 +14,7 @@ br{
 ul{
     padding-left:10px;
     margin:10px 0;
-    list-style-type: circle;
+    list-style-type: none;
 }
 a.download{
     margin:10px auto;
@@ -47,6 +47,8 @@ a.download:hover{
     padding:15px;
     margin: 5px;
     color:#fff;
+    padding-left: 40px;
+    position: relative;
 }
 code{
     border:1px dashed #555;
@@ -189,11 +191,13 @@ fieldset input{
     font-size: 12px;
     margin-bottom:20px;
     color:#000;
+    padding-left: 40px;
+    position: relative;
 }
 form{
     padding: 10px;
 }
-.xml_block, .php_block{
+.xml_block, .php_block, .valid_block{
     display: none;
 }
 .button{
@@ -222,10 +226,11 @@ form{
 }
 header{
     width:100%;
-    height: 100px;
+    height: 90px;
     background-color: #1e1e1e;
     border-bottom: 1px solid #333;
     margin-bottom: 20px;
+    padding: 10px;
 }
 footer{
     width:100%;
@@ -238,7 +243,6 @@ footer{
 }
 header h1{
     font-size: 25px;
-    margin:10px;
 }
 #main_content{
     padding: 20px;
@@ -272,4 +276,63 @@ label{
 }
 .container code{
 	display: inline;
+}
+p.description{
+    padding:15px;
+    background-color: #222;
+    border-bottom: 1px solid #666;
+    margin:10px;
+    font-size: 16px;
+}
+.errors li{
+    padding:10px;
+    border: 1px solid #b00;
+    border-left-width: 8px;
+    padding-left: 40px;
+    list-style-type: none;
+    margin: 10px auto;
+    position: relative;
+}
+.info span, .errors li span, .attibutes span, .todo span{
+    background-repeat: no-repeat;
+    position: absolute;
+    top: 10px;
+    left:10px;
+    display: block;
+    width: 16px;
+    height: 16px;
+}
+.errors li span{
+    background-image: url(css/custom-theme2/images/ui-icons_dba994_256x240.png); 
+    background-position: 0 -144px;
+}
+.attibutes span{
+    top:5px;
+    background-image: url(css/custom-theme2/images/ui-icons_bbf782_256x240.png); 
+    background-position: -16px -112px;
+}
+.info span{
+    background-image: url(css/custom-theme2/images/ui-icons_ffffff_256x240.png); 
+    background-position: -16px -144px;
+    top: 15px;
+}
+.todo li{
+    padding:10px;
+    border: 1px solid #FF7F00;
+    border-left-width: 8px;
+    padding-left: 40px;
+    list-style-type: none;
+    margin: 10px auto;
+    position: relative;
+}
+.todo li span{
+    background-image: url(css/custom-theme2/images/ui-icons_dba994_256x240.png); 
+    background-position: -176px -112px;
+}
+li.solved{
+    border: 1px solid green;
+    border-left-width: 8px;
+}
+b{
+    font-weight: bold;
 }

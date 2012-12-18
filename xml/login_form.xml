@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE root SYSTEM "form.dtd">
+<form method="post" class="form" action="" accept-charset="utf-8" target="_self">
+    <p>
+        <label>
+			Login:
+		</label>
+        <input type="hidden" name="form_type" value="login_form"/>
+		<input type="email" name="email" placeholder="Enter E-mail" 
+            required="required" value="" minlength="5"
+            valid_type="mail"
+        />
+        <div class="attibutes">
+            type="email" name="email" placeholder="Enter E-mail"
+            required="required" value="" minlength="5" valid_type="mail" 
+            <span></span>
+        </div>
+        <div class="info">
+            DEFAULT LOGIN: user@web.com
+            <span></span>
+        </div>
+    </p>
+    <p>
+        <label>
+			Password
+		</label>
+        <input type="password" name="pass" placeholder="Enter Password" 
+            maxlength="20" required="required" minlength="2" 
+            valid_type="num_chars" check_callback_value="Validator_Password::check"
+        />
+        <div class="attibutes">
+            type="password" name="pass" placeholder="Enter Password" 
+            maxlength="20" required="required" minlength="7" 
+            valid_type="num_chars" check_callback_value="Validator_Password::check"
+            <span></span>
+        </div>
+        <div class="info">
+            DEFAULT PASSWORD: somePassword
+            <span></span>
+        </div>
+    </p>
+    <p>
+        <email_error convert="span" class="input_error">
+            Login or email was incorrect.
+        </email_error>
+        <pass_error class="input_error" convert="span">
+			Login or email was incorrect.
+		</pass_error>
+    </p>
+    <p>
+        <input type="submit" value="submit"/>
+    </p>
+</form>
